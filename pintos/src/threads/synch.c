@@ -32,6 +32,17 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 
+// Less function for sorting blocking waiters list
+bool
+wakeup_list_less (const struct list_elem *elt_1, const struct list_elem *elt_2, void *aux) 
+{
+  // Get original threads from list elements
+  const struct thread *t1 = list_entry(elt_1, struct thread, elem);
+  const struct thread *t2 = list_entry(elt_2, struct thread, elem);
+  int result = t1->wakeup_ticks < t2->wakeup_ticks;
+  return result;
+}
+
 /* Initializes semaphore SEMA to VALUE.  A semaphore is a
    nonnegative integer along with two atomic operators for
    manipulating it:
@@ -68,7 +79,8 @@ sema_down (struct semaphore *sema)
   old_level = intr_disable ();
   while (sema->value == 0) 
     {
-      list_push_back (&sema->waiters, &thread_current ()->elem);
+      list_insert_ordered(&sema->waiters, &thread_current ()->elem, 
+                                                wakeup_list_less, NULL);
       thread_block ();
     }
   sema->value--;
