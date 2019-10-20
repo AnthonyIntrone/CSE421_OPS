@@ -99,11 +99,9 @@ timer_sleep (int64_t ticks)
     return;
   }
   int64_t wake_up_time = timer_ticks() + ticks;
-  struct thread t = current_thread();
-  t -> wakeup_ticks = wake_up_time;
-  ASSERT(sema_try_down(&block_sema))
+  struct thread *t = thread_current();
+  t -> wakeup_ticks = wake_up_time;  
   sema_down(&block_sema);
-  sema_up(&block_sema);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -183,10 +181,13 @@ timer_interrupt (struct intr_frame *args UNUSED)
   ticks++;
   thread_tick ();
   int64_t current_ticks = timer_ticks();
-  if(list_head(&block_sema->waiters)->wakeup_ticks <= current_ticks){
-    const struct list_elem elt_1 = list_pop_front(&block_sema->waiters);
-    const struct thread *t1 = list_entry (elt_1, struct thread, elem);
-    thread_unblock(&t1);
+
+  struct list *waiters_list_ptr = &block_sema.waiters;
+  // For some reason you cannot call this function in the interrupt
+  const struct thread *t1 = list_entry(list_pop_front(waiters_list_ptr), struct thread, elem);
+
+  if(t1->wakeup_ticks <= current_ticks){
+    sema_up(&block_sema);
   }
 }
 
