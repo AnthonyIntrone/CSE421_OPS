@@ -173,6 +173,7 @@ timer_print_stats (void)
 {
   printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
+
 
 /* Timer interrupt handler. */
 static void
@@ -181,14 +182,15 @@ timer_interrupt (struct intr_frame *args UNUSED)
   ticks++;
   thread_tick ();
   int64_t current_ticks = timer_ticks();
-
   struct list *waiters_list_ptr = &block_sema.waiters;
-  // For some reason you cannot call this function in the interrupt
-  const struct thread *t1 = list_entry(list_pop_front(waiters_list_ptr), struct thread, elem);
-
-  if(t1->wakeup_ticks <= current_ticks){
+  
+  enum intr_level old_level = intr_disable ();
+  while(!list_empty(waiters_list_ptr)) {
+    // struct thread *t = list_entry (list_front (&waiters_list_ptr), struct thread, elem);
     sema_up(&block_sema);
   }
+  intr_set_level (old_level);
+ 
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

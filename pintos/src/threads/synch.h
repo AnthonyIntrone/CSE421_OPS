@@ -4,6 +4,7 @@
 #include <list.h>
 #include <stdbool.h>
 
+
 /* A counting semaphore. */
 struct semaphore 
   {
@@ -40,7 +41,7 @@ void cond_init (struct condition *);
 void cond_wait (struct condition *, struct lock *);
 void cond_signal (struct condition *, struct lock *);
 void cond_broadcast (struct condition *, struct lock *);
-
+bool wakeup_list_less (const struct list_elem *elt_1, const struct list_elem *elt_2, void *aux); 
 /* Optimization barrier.
 
    The compiler will not reorder operations across an
